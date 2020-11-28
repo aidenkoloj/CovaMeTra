@@ -36,17 +36,58 @@ covametra = function(x){
     
 }
 
+
+cbPalette <- c(rep("#cf6090",6), rep("#3853a4",6), rep("#78c6cf",6), rep("#faa41a",6))
+
+plot_2features = function(f1, f2){
+    
+    title = paste(f1, f2, sep ="/")
+    
+    df1 <- metra_data %>% filter(feature == f1) %>% rename( df1_value = abundance)
+    df2 <- metra_data %>% filter(feature == f2) %>% rename( df2_value = abundance) %>% select(df2_value)
+    df_combined <- cbind(df1, df2) 
+    print(df_combined)
+    contains_r2_value = lm(df1_value ~ df2_value, data=df_combined)
+    
+    ggplot(df_combined, aes(df1_value, df2_value))+
+        geom_point(aes(color = replicate), size = 2)+
+        #ggtitle(title)+
+        theme(plot.title = element_text(hjust = 0.5, size =20, vjust = 5, face = "bold"))+
+        theme_bw() + theme(panel.border = element_blank(),
+                           text=element_text(size=10,  family="Arial"), legend.position = "none")+
+        theme(plot.title = element_text(hjust = 0.5, size =10, vjust = 5, face = "bold"))+
+        theme(plot.margin=unit(c(1,1.5,1.5,1.2),"cm"))+
+        geom_smooth(method = "lm", col = "gray", se = F)+
+        labs( x = as.character(f1), y = as.character(f2))+
+        geom_text(x = -Inf, y = Inf,hjust = 0, vjust = 1, label = paste("R2 = ",signif(summary(contains_r2_value)$r.squared, 5)))+
+        scale_colour_manual(values=cbPalette)
+}
+
 ui <- fluidPage(
     
     navbarPage("CovaMeTra", theme = shinytheme("lumen"),
+               
                tabPanel("Correlate Features", fluid = TRUE, icon = icon("connectdevelop"),
                         textInput(inputId = "feature",
                                   label = "Enter a feature name:"),
+                                  tableOutput("head"),
+                                  downloadButton("downloadData", "Download Table")),
+               
+
+                tabPanel("Plot Two Features", fluid = TRUE, icon = icon("grip-lines"),
+                        textInput(inputId = "f1",
+                                    label = "Enter a feature name (f1):"),
+                        textInput(inputId = "f2",
+                                  label = "Enter a feature name (f2):"),
+                mainPanel(
+                    
+                    plotOutput(outputId = "features_graph"), width = "100%")
+                
+                )
                         
-                        tableOutput("head"),
-                        
-                        downloadButton("downloadData", "Download Table"),
-)))
+
+)
+)
     
 server <- function(input, output, session) {
     
@@ -68,6 +109,15 @@ server <- function(input, output, session) {
     
     output$head <- renderTable({
         r_2()
+    })
+    
+    output$features_graph <- renderPlot({ 
+        width = 200
+        height = 200 
+        req(input$f1)
+        req(input$f2)
+        plot_2features(input$f1,input$f2)
+        
     })
     
     output$downloadData <- downloadHandler(
