@@ -5,6 +5,7 @@ library(magrittr)
 library(shinycssloaders)
 library(shinythemes)
 library(shiny)
+library(plotly)
 options(shiny.maxRequestSize = 600*1024^2)
 
 rna_seq = read_csv("NIDDK_RNA_seq_with_replicate_ID.csv")
@@ -69,9 +70,9 @@ ui <- fluidPage(
                
                tabPanel("Correlate Features", fluid = TRUE, icon = icon("connectdevelop"),
                         textInput(inputId = "feature",
-                                  label = "Enter a feature name:"),
-                                  tableOutput("head"),
-                                  downloadButton("downloadData", "Download Table")),
+                                  label = "Perform a correlation:"),
+                        tableOutput("head"),
+                        downloadButton("downloadData", "Download Table")),
                
 
                 tabPanel("Plot Two Features", fluid = TRUE, icon = icon("grip-lines"),
@@ -79,15 +80,19 @@ ui <- fluidPage(
                                     label = "Enter a feature name (f1):"),
                         textInput(inputId = "f2",
                                   label = "Enter a feature name (f2):"),
-                mainPanel(
-                    
-                    plotOutput(outputId = "features_graph"), width = "100%")
-                
-                )
+                        mainPanel(plotlyOutput(outputId = "features_graph"), width = "100%")),
+                        
+                        
+                tabPanel("Feature search", fluid = TRUE, icon = icon("search"),
+                        textInput(inputId = "fsearch",
+                                  label ="Search for a feature: "),
+                        mainPanel(tableOutput("search_data"), width = "100%"))
+                        
                         
 
 )
 )
+
     
 server <- function(input, output, session) {
     
@@ -111,12 +116,16 @@ server <- function(input, output, session) {
         r_2()
     })
     
-    output$features_graph <- renderPlot({ 
+    output$search_data <- renderTable({
+        metra_data %>% filter(feature == input$fsearch)
+    })
+    
+    output$features_graph <- renderPlotly({ 
         width = 200
         height = 200 
         req(input$f1)
         req(input$f2)
-        plot_2features(input$f1,input$f2)
+        ggplotly(plot_2features(input$f1,input$f2))
         
     })
     
