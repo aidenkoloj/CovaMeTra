@@ -2,6 +2,9 @@
 library(tidyverse)
 library(dplyr)
 library(magrittr)
+library(shinycssloaders)
+library(shinythemes)
+library(shiny)
 options(shiny.maxRequestSize = 600*1024^2)
 
 rna_seq = read_csv("NIDDK_RNA_seq_with_replicate_ID.csv")
@@ -35,18 +38,16 @@ covametra = function(x){
 
 ui <- fluidPage(
     
-    headerPanel("CovaMeTra"),
+    navbarPage("CovaMeTra", theme = shinytheme("lumen"),
+               tabPanel("Correlate Features", fluid = TRUE, icon = icon("connectdevelop"),
+                        textInput(inputId = "feature",
+                                  label = "Enter a feature name:"),
+                        
+                        tableOutput("head"),
+                        
+                        downloadButton("downloadData", "Download Table"),
+)))
     
-    #fileInput("file", "Upload a csv file", accept = c(".csv")),
-    
-    textInput(inputId = "feature",
-              label = "Enter a feature name:"),
-    
-    tableOutput("head"),
-    
-    downloadButton("downloadData", "Download Table")
-)
-
 server <- function(input, output, session) {
     
     feature_name_input <- reactive({
